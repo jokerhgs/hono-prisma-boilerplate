@@ -1,10 +1,12 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import 'dotenv/config';
 
 const app = new Hono();
 
 app.get('/', (c) => {
-  return c.text('Hello Hono!');
+  const NAME = process.env.NAME as string;
+  return c.text(NAME);
 });
 
 serve(
