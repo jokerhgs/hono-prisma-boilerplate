@@ -32,7 +32,7 @@ To get started with this boilerplate, follow these steps:
 
 ### 1. Clone the Repository
 
-git clone https://github.com/your-org/hono-backend-boilerplate.git your-project
+git clone [https://github.com/your-org/hono-backend-boilerplate.git](https://github.com/kierdev/hono-backend-boilerplate.git) your-project
 cd your-project
 
 
