@@ -1,49 +1,64 @@
-import { type Task, type CreateTaskDTO, type UpdateTaskDTO } from './tasks-schema.js';
-import { randomUUID } from 'crypto';
+import {
+    findAll,
+    findById,
+    create,
+    update,
+    deleteById,
+    findByStatus,
+} from './tasks-repository.js';
+import type { CreateTaskDTO, UpdateTaskDTO } from './tasks-schema.js';
+import type { Task } from '@prisma/client';
 
-export class TasksService {
-    private tasks: Task[] = [];
+/**
+ * Service Layer for Tasks
+ * Business logic and orchestration
+ */
 
-    findAll(): Task[] {
-        return this.tasks;
-    }
-
-    findById(id: string): Task | undefined {
-        return this.tasks.find(t => t.id === id);
-    }
-
-    create(data: CreateTaskDTO): Task {
-        const newTask: Task = {
-            id: randomUUID(),
-            title: data.title,
-            completed: data.completed ?? false,
-            createdAt: new Date().toISOString()
-        };
-        this.tasks.push(newTask);
-        return newTask;
-    }
-
-    update(id: string, data: UpdateTaskDTO): Task | null {
-        const taskIndex = this.tasks.findIndex(t => t.id === id);
-        if (taskIndex === -1) return null;
-
-        const updatedTask = { ...this.tasks[taskIndex], ...data };
-        this.tasks[taskIndex] = updatedTask;
-        return updatedTask;
-    }
-
-    delete(id: string): boolean {
-        const taskIndex = this.tasks.findIndex(t => t.id === id);
-        if (taskIndex === -1) return false;
-
-        this.tasks.splice(taskIndex, 1);
-        return true;
-    }
-
-    // Helper for testing
-    reset(): void {
-        this.tasks = [];
-    }
+/**
+ * Get all tasks
+ */
+export async function getAllTasks(): Promise<Task[]> {
+    return findAll();
 }
 
-export const tasksService = new TasksService();
+/**
+ * Get task by ID
+ */
+export async function getTaskById(id: string): Promise<Task | null> {
+    return findById(id);
+}
+
+/**
+ * Create a new task
+ */
+export async function createTask(data: CreateTaskDTO): Promise<Task> {
+    return create({
+        title: data.title,
+        completed: data.completed ?? false,
+    });
+}
+
+/**
+ * Update an existing task
+ */
+export async function updateTask(
+    id: string,
+    data: UpdateTaskDTO
+): Promise<Task | null> {
+    return update(id, data);
+}
+
+/**
+ * Delete a task
+ */
+export async function deleteTask(id: string): Promise<boolean> {
+    return deleteById(id);
+}
+
+/**
+ * Get tasks by completion status
+ */
+export async function getTasksByStatus(completed: boolean): Promise<Task[]> {
+    return findByStatus(completed);
+}
+

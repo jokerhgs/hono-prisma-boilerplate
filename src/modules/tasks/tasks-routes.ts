@@ -1,12 +1,18 @@
 import { Hono } from 'hono';
-import * as tasksController from './tasks-controller.js';
+import {
+    getTasks,
+    getTask,
+    createTask,
+    updateTask,
+    deleteTask,
+} from './tasks-controller.js';
 
 const tasksRouter = new Hono();
 
-tasksRouter.get('/', tasksController.getTasks);
-tasksRouter.get('/:id', tasksController.getTaskFn);
-tasksRouter.post('/', tasksController.createTask);
-tasksRouter.patch('/:id', tasksController.updateTask);
-tasksRouter.delete('/:id', tasksController.deleteTask);
+tasksRouter.get('/', getTasks);
+tasksRouter.get('/:id', getTask);
+tasksRouter.post('/', createTask);
+tasksRouter.patch('/:id', updateTask);
+tasksRouter.delete('/:id', deleteTask);
 
 export default tasksRouter;
