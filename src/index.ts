@@ -4,12 +4,14 @@ import { Hono } from 'hono';
 import { logger as honoLogger } from 'hono/logger';
 import logger from './lib/logger.js';
 import { checkDatabaseConnection } from './lib/prisma.js';
+import { limiter } from './lib/rate-limiter.js';
 import router from './routes.js';
 
 const app = new Hono();
 
 // Middleware
 app.use(honoLogger());
+app.use(limiter);
 
 // Error Handling
 app.onError((err, c) => {
