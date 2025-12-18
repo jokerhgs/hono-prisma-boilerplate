@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { logger as honoLogger } from 'hono/logger';
 import logger from './lib/logger.js';
 import { checkDatabaseConnection } from './lib/prisma.js';
-import tasksRouter from './modules/tasks/tasks-routes.js';
+import router from './routes.js';
 
 const app = new Hono();
 
@@ -27,7 +27,7 @@ app.get('/', (c) => {
   return c.text('Hello Hono!');
 });
 
-app.route('/tasks', tasksRouter);
+app.route('/', router);
 
 const port = 3000;
 
