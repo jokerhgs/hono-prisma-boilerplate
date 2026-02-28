@@ -1,14 +1,14 @@
 # Hono Boilerplate - Modular Monolithic API
 
-A clean, production-ready boilerplate for building modular monolithic REST APIs with Hono, TypeScript, Prisma, and Zod validation.
+A clean, production-ready boilerplate for building modular monolithic REST APIs with Hono, TypeScript, Drizzle ORM, and Zod validation.
 
 ## Features
 
 - **Modular Architecture**: Organized by feature modules with clear separation of concerns
-- **Repository Layer**: Isolated database operations using Prisma ORM
+- **Repository Layer**: Isolated database operations using Drizzle ORM
 - **Type Safety**: Full TypeScript support with Zod schema validation
 - **Isolated Functions**: No classes, pure functions only
-- **Database**: PostgreSQL with Prisma ORM (Supabase ready)
+- **Database**: PostgreSQL with Drizzle ORM (Supabase ready)
 - **Testing**: Comprehensive integration tests with Vitest
 - **Hot Reload**: Development server with auto-reload
 
@@ -16,8 +16,11 @@ A clean, production-ready boilerplate for building modular monolithic REST APIs 
 
 ```
 src/
+├── db/
+│   ├── index.ts                 # Drizzle client singleton
+│   └── schema.ts                # Database schema
 ├── lib/
-│   └── prisma.ts                # Prisma client singleton
+│   └── db.ts                    # DB connection helpers
 ├── modules/
 │   └── tasks/                   # Example module
 │       ├── tasks-schema.ts      # Zod schemas and types
@@ -27,10 +30,7 @@ src/
 │       ├── tasks-routes.ts      # Route definitions
 │       └── tasks.test.ts        # Integration tests
 └── index.ts                     # Application entry point
-prisma/
-├── schema.prisma                # Database schema
-├── migrations/                  # Database migrations
-└── prisma.config.ts             # Prisma 7 configuration
+drizzle.config.ts                # Drizzle kit configuration
 ```
 
 ## Architecture Layers
@@ -38,18 +38,18 @@ prisma/
 ### 1. Repository Layer
 **File**: `{module}-repository.ts`
 
-- Direct database operations using Prisma
+- Direct database operations using Drizzle ORM
 - Pure CRUD functions
 - No business logic
-- Returns Prisma types
+- Returns Drizzle schema types
 
 **Naming Convention**: Use descriptive verbs
 ```typescript
-// ✅ Good
+// Good
 export async function findAll(): Promise<Task[]>
 export async function findById(id: string): Promise<Task | null>
-export async function create(data: Prisma.TaskCreateInput): Promise<Task>
-export async function update(id: string, data: Prisma.TaskUpdateInput): Promise<Task | null>
+export async function create(data: Pick<NewTask, 'title' | 'completed'>): Promise<Task>
+export async function update(id: string, data: Partial<Pick<NewTask, 'title' | 'completed'>>): Promise<Task | null>
 export async function deleteById(id: string): Promise<boolean>
 ```
 
@@ -63,7 +63,7 @@ export async function deleteById(id: string): Promise<boolean>
 
 **Naming Convention**: Use domain-specific action names
 ```typescript
-// ✅ Good
+// Good
 export async function getAllTasks(): Promise<Task[]>
 export async function getTaskById(id: string): Promise<Task | null>
 export async function createTask(data: CreateTaskDTO): Promise<Task>
@@ -82,7 +82,7 @@ export async function getTaskStats(): Promise<TaskStats>
 
 **Naming Convention**: Match HTTP method + resource
 ```typescript
-// ✅ Good
+// Good
 export async function getTasks(c: Context)      // GET /tasks
 export async function getTask(c: Context)       // GET /tasks/:id
 export async function createTask(c: Context)    // POST /tasks
@@ -109,23 +109,23 @@ tasksRouter.post('/', TaskController.createTask);
 
 ### Isolated Functions (No Classes)
 
-**❌ Don't use classes**:
+**Don't use classes**:
 ```typescript
 export class TasksService {
   findAll() { }
 }
 ```
 
-**✅ Use isolated functions**:
+**Use isolated functions**:
 ```typescript
 export async function findAll(): Promise<Task[]> {
-  return prisma.task.findMany();
+  return db.select().from(tasks);
 }
 ```
 
 ### Named Imports
 
-**✅ Use named imports for clarity**:
+**Use named imports for clarity**:
 ```typescript
 import { getAllTasks, createTask } from './tasks-service.js';
 import { findAll, findById } from './tasks-repository.js';
@@ -181,7 +181,7 @@ NODE_ENV="development"
 pnpm db:migrate
 ```
 
-4. **Generate Prisma Client**:
+4. **Generate Drizzle Migrations**:
 ```bash
 pnpm db:generate
 ```
@@ -195,7 +195,7 @@ pnpm dev
 # Run tests
 pnpm test
 
-# Open Prisma Studio
+# Open Drizzle Studio
 pnpm db:studio
 ```
 
@@ -255,21 +255,23 @@ export const UserSchema = z.object({
 });
 
 export const CreateUserSchema = UserSchema.omit({ id: true });
-export type User = z.infer<typeof UserSchema>;
+export type UserDTO = z.infer<typeof UserSchema>;
 export type CreateUserDTO = z.infer<typeof CreateUserSchema>;
 ```
 
 ```typescript
 // users-repository.ts - Database operations
-import { prisma } from '../../lib/prisma.js';
-import type { User, Prisma } from '@prisma/client';
+import { db } from '../../db/index.js';
+import { users } from '../../db/schema.js';
+import type { User, NewUser } from '../../db/schema.js';
 
 export async function findAll(): Promise<User[]> {
-  return prisma.user.findMany();
+  return db.select().from(users);
 }
 
-export async function create(data: Prisma.UserCreateInput): Promise<User> {
-  return prisma.user.create({ data });
+export async function create(data: NewUser): Promise<User> {
+  const result = await db.insert(users).values(data).returning();
+  return result[0];
 }
 ```
 
@@ -315,28 +317,26 @@ import usersRouter from './modules/users/users-routes.js';
 app.route('/users', usersRouter);
 ```
 
-4. **Update Prisma schema** and run migration:
+4. **Update Drizzle schema** and run migration:
 ```bash
+pnpm db:generate
 pnpm db:migrate
 ```
 
 ## Database Commands
 
 ```bash
-# Create migration
-pnpm db:migrate
-
-# Generate Prisma Client
+# Generate migration files
 pnpm db:generate
 
-# Open Prisma Studio (database GUI)
+# Run database migrations
+pnpm db:migrate
+
+# Open Drizzle Studio (database GUI)
 pnpm db:studio
 
 # Push schema changes (dev only)
 pnpm db:push
-
-# Reset database
-pnpm prisma migrate reset
 ```
 
 ## Testing
@@ -345,11 +345,12 @@ Tests are integration tests that use the actual database:
 
 ```typescript
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../db/index.js';
+import { tasks } from '../../db/schema.js';
 
 describe('Tasks API', () => {
   beforeEach(async () => {
-    await prisma.task.deleteMany(); // Clean database
+    await db.delete(tasks); // Clean database
   });
 
   it('should create a task', async () => {
@@ -361,7 +362,6 @@ describe('Tasks API', () => {
 Run tests:
 ```bash
 pnpm test           # Run all tests
-pnpm test --watch   # Watch mode
 ```
 
 ## Tech Stack
@@ -370,7 +370,7 @@ pnpm test --watch   # Watch mode
 - **Framework**: Hono (lightweight, fast)
 - **Language**: TypeScript
 - **Database**: PostgreSQL (via Supabase)
-- **ORM**: Prisma 7
+- **ORM**: Drizzle ORM
 - **Validation**: Zod
 - **Testing**: Vitest
 - **Dev Tools**: tsx (hot reload)
@@ -391,10 +391,10 @@ pnpm test --watch   # Watch mode
 | `pnpm build` | Build for production |
 | `pnpm start` | Start production server |
 | `pnpm test` | Run tests |
-| `pnpm db:generate` | Generate Prisma Client |
+| `pnpm db:generate` | Generate Drizzle migrations |
 | `pnpm db:migrate` | Run database migrations |
-| `pnpm db:studio` | Open Prisma Studio |
-| `pnpm db:push` | Push schema changes (dev only) |
+| `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm db:push` | Push schema changes directly parameters (dev only) |
 
 ## Best Practices
 
@@ -402,7 +402,7 @@ pnpm test --watch   # Watch mode
 2. **Keep functions pure** - no side effects except database operations
 3. **One responsibility per function** - functions should do one thing well
 4. **Validate at the edge** - use Zod schemas in controllers
-5. **Type everything** - leverage TypeScript and Prisma types
+5. **Type everything** - leverage TypeScript and Drizzle types
 6. **Test with real database** - integration tests are more valuable
 7. **Document public functions** - use JSDoc comments
 8. **Handle errors gracefully** - return null/false instead of throwing when appropriate
