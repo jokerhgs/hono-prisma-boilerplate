@@ -6,17 +6,19 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:push": "prisma db push"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
+    "format": "prettier --write .",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
-    "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
+    "@paralleldrive/cuid2": "^3.3.0",
     "dotenv": "^17.2.3",
-    "eslint": "^9.39.2",
+    "drizzle-orm": "^0.45.1",
+    "eslint": "^10.0.1",
     "hono": "^4.11.1",
     "hono-rate-limiter": "^0.5.0",
     "pg": "^8.16.3",
@@ -26,11 +28,13 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.11.17",
     "@types/pg": "^8.16.0",
-    "prisma": "^7.1.0",
+    "drizzle-kit": "^0.31.9",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.16"
   }
 }

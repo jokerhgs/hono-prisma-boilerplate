@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { logger as honoLogger } from 'hono/logger';
 import logger from './lib/logger.js';
-import { checkDatabaseConnection } from './lib/prisma.js';
+import { checkDatabaseConnection } from './lib/db.js';
 import { limiter } from './lib/rate-limiter.js';
 import router from './routes.js';
 
@@ -21,7 +21,7 @@ app.onError((err, c) => {
       error: err.message,
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     },
-    500
+    500,
   );
 });
 
@@ -42,9 +42,12 @@ checkDatabaseConnection().then((result) => {
   }
 });
 
-serve({
-  fetch: app.fetch,
-  port
-}, (info) => {
-  logger.info(`Server is running on http://localhost:${info.port}`);
-});
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    logger.info(`Server is running on http://localhost:${info.port}`);
+  },
+);

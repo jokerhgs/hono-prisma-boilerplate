@@ -1,5 +1,7 @@
-import { prisma } from '../../lib/prisma.js';
-import type { Task, Prisma } from '@prisma/client';
+import { eq, desc, sql } from 'drizzle-orm';
+import { db } from '../../db/index.js';
+import { tasks } from '../../db/schema.js';
+import type { Task, NewTask } from '../../db/schema.js';
 
 /**
  * Data Access Layer for Tasks
@@ -10,75 +12,59 @@ import type { Task, Prisma } from '@prisma/client';
  * Find all tasks
  */
 export async function findAll(): Promise<Task[]> {
-    return prisma.task.findMany({
-        orderBy: { createdAt: 'desc' },
-    });
+  return db.select().from(tasks).orderBy(desc(tasks.createdAt));
 }
 
 /**
  * Find task by ID
  */
 export async function findById(id: string): Promise<Task | null> {
-    return prisma.task.findUnique({
-        where: { id },
-    });
+  const result = await db.select().from(tasks).where(eq(tasks.id, id));
+  return result[0] ?? null;
 }
 
 /**
  * Create a new task
  */
-export async function create(data: Prisma.TaskCreateInput): Promise<Task> {
-    return prisma.task.create({
-        data,
-    });
+export async function create(data: Pick<NewTask, 'title' | 'completed'>): Promise<Task> {
+  const result = await db.insert(tasks).values(data).returning();
+  return result[0];
 }
 
 /**
  * Update a task by ID
  */
 export async function update(
-    id: string,
-    data: Prisma.TaskUpdateInput
+  id: string,
+  data: Partial<Pick<NewTask, 'title' | 'completed'>>,
 ): Promise<Task | null> {
-    try {
-        return await prisma.task.update({
-            where: { id },
-            data,
-        });
-    } catch (error) {
-        // Task not found
-        return null;
-    }
+  const result = await db.update(tasks).set(data).where(eq(tasks.id, id)).returning();
+  return result[0] ?? null;
 }
 
 /**
  * Delete a task by ID
  */
 export async function deleteById(id: string): Promise<boolean> {
-    try {
-        await prisma.task.delete({
-            where: { id },
-        });
-        return true;
-    } catch (error) {
-        // Task not found
-        return false;
-    }
+  const result = await db.delete(tasks).where(eq(tasks.id, id)).returning({ id: tasks.id });
+  return result.length > 0;
 }
 
 /**
  * Count all tasks
  */
 export async function count(): Promise<number> {
-    return prisma.task.count();
+  const result = await db.select({ count: sql<number>`cast(count(*) as int)` }).from(tasks);
+  return result[0].count;
 }
 
 /**
  * Find tasks by completion status
  */
 export async function findByStatus(completed: boolean): Promise<Task[]> {
-    return prisma.task.findMany({
-        where: { completed },
-        orderBy: { createdAt: 'desc' },
-    });
+  return db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.completed, completed))
+    .orderBy(desc(tasks.createdAt));
 }
