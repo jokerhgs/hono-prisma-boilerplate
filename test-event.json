@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "routeKey": "$default",
+  "rawPath": "/users",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "content-type": "application/json"
+  },
+  "body": "{\"name\": \"John Doe\", \"email\": \"john@example.com\"}",
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/users",
+      "protocol": "HTTP/1.1"
+    }
+  },
+  "isBase64Encoded": false
+}

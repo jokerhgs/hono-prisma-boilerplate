@@ -26,12 +26,13 @@ FROM public.ecr.aws/lambda/nodejs:20 AS runner
 
 WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Copy only production node_modules from the builder
+# Copy only production dependencies and package.json (needed for "type": "module")
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy compiled JavaScript output
-COPY --from=builder /app/dist ./dist
+# Copy compiled JavaScript output directly into task root
+COPY --from=builder /app/dist ./
 
 # The Lambda handler must be: <file>.<export>
-# Our compiled output: dist/lambda.js  →  export handler
-CMD ["dist/lambda.handler"]
+# Our compiled output is now: lambda.js  →  export handler
+CMD ["lambda.handler"]

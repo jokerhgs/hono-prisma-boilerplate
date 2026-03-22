@@ -128,7 +128,13 @@ docker build -t my-hono-api .
 ```bash
 docker-compose up
 ```
-*Note: Sends events on port 9000 (e.g. `http://localhost:9000/2015-03-31/functions/function/invocations`)*
+
+3. **Trigger a local Lambda test event**:
+While the container is running, in a separate terminal you can trigger an API Gateway HTTP request (as AWS would in production) using our predefined script:
+```bash
+pnpm docker:lambda-test
+```
+*Note: This script uses `test-event.json` as the payload. You can modify this JSON file to test different routes or HTTP methods (GET, POST, etc).*
 
 ## API Endpoints
 
