@@ -1,18 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import tasksRouter from './tasks-routes.js';
-import { prisma } from '../../lib/prisma.js';
+import usersRouter from './users-routes.js';
+import { db } from '../../db/index.js';
+import { users } from '../../db/schema.js';
 
-describe('Tasks API', () => {
-    const app = new Hono().route('/', tasksRouter);
+describe('Users API', () => {
+    const app = new Hono().route('/', usersRouter);
 
-    // Clean up database before and after each test
     beforeEach(async () => {
-        await prisma.task.deleteMany();
+        await db.delete(users);
     });
 
     afterEach(async () => {
-        await prisma.task.deleteMany();
+        await db.delete(users);
     });
 
     it('should return empty list initially', async () => {
@@ -22,107 +22,94 @@ describe('Tasks API', () => {
         expect(data).toEqual([]);
     });
 
-    it('should create a task', async () => {
+    it('should create a user', async () => {
         const res = await app.request('/', {
             method: 'POST',
-            body: JSON.stringify({ title: 'Test Task' }),
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
             headers: { 'Content-Type': 'application/json' },
         });
         expect(res.status).toBe(201);
         const data = await res.json();
-        expect(data.title).toBe('Test Task');
+        expect(data.email).toBe('test@example.com');
+        expect(data.name).toBe('Test User');
         expect(data.id).toBeDefined();
-        expect(data.completed).toBe(false);
     });
 
-    it('should get a task by id', async () => {
-        // Create first
+    it('should prevent duplicate emails', async () => {
+        await app.request('/', {
+            method: 'POST',
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User 1' }),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const res = await app.request('/', {
+            method: 'POST',
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User 2' }),
+            headers: { 'Content-Type': 'application/json' },
+        });
+        expect(res.status).toBe(409);
+    });
+
+    it('should get a user by id', async () => {
         const createRes = await app.request('/', {
             method: 'POST',
-            body: JSON.stringify({ title: 'Test Task' }),
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
             headers: { 'Content-Type': 'application/json' },
         });
         const created = await createRes.json();
 
-        // Get
         const res = await app.request(`/${created.id}`);
         expect(res.status).toBe(200);
         const data = await res.json();
         expect(data.id).toBe(created.id);
-        expect(data.title).toBe('Test Task');
+        expect(data.email).toBe('test@example.com');
     });
 
-    it('should update a task', async () => {
-        // Create first
+    it('should update a user', async () => {
         const createRes = await app.request('/', {
             method: 'POST',
-            body: JSON.stringify({ title: 'Test Task' }),
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
             headers: { 'Content-Type': 'application/json' },
         });
         const created = await createRes.json();
 
-        // Update
         const res = await app.request(`/${created.id}`, {
             method: 'PATCH',
-            body: JSON.stringify({ completed: true }),
+            body: JSON.stringify({ name: 'Updated Name' }),
             headers: { 'Content-Type': 'application/json' },
         });
         expect(res.status).toBe(200);
         const data = await res.json();
-        expect(data.completed).toBe(true);
+        expect(data.name).toBe('Updated Name');
+        expect(data.email).toBe('test@example.com'); // unchanged
     });
 
-    it('should delete a task', async () => {
-        // Create first
+    it('should delete a user', async () => {
         const createRes = await app.request('/', {
             method: 'POST',
-            body: JSON.stringify({ title: 'Test Task' }),
+            body: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
             headers: { 'Content-Type': 'application/json' },
         });
         const created = await createRes.json();
 
-        // Delete
         const res = await app.request(`/${created.id}`, {
             method: 'DELETE',
         });
         expect(res.status).toBe(204);
 
-        // Verify deleted
         const getRes = await app.request(`/${created.id}`);
         expect(getRes.status).toBe(404);
     });
 
-    it('should get task statistics', async () => {
-        // Create some tasks
-        await app.request('/', {
-            method: 'POST',
-            body: JSON.stringify({ title: 'Task 1', completed: false }),
-            headers: { 'Content-Type': 'application/json' },
-        });
-        await app.request('/', {
-            method: 'POST',
-            body: JSON.stringify({ title: 'Task 2', completed: true }),
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        // Get stats
-        const res = await app.request('/stats');
-        expect(res.status).toBe(200);
-        const data = await res.json();
-        expect(data.total).toBe(2);
-        expect(data.completed).toBe(1);
-        expect(data.pending).toBe(1);
-    });
-
-    it('should return 404 for non-existent task', async () => {
+    it('should return 404 for non-existent user', async () => {
         const res = await app.request('/non-existent-id');
         expect(res.status).toBe(404);
     });
 
-    it('should validate task creation', async () => {
+    it('should validate user creation', async () => {
         const res = await app.request('/', {
             method: 'POST',
-            body: JSON.stringify({ title: '' }), // Invalid: empty title
+            body: JSON.stringify({ email: 'not-an-email', name: '' }),
             headers: { 'Content-Type': 'application/json' },
         });
         expect(res.status).toBe(400);
