@@ -1,0 +1,23 @@
+{
+  "name": "hono-bun-serverless",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm exec bun --watch src/index.ts",
+    "start": "pnpm exec bun src/index.ts",
+    "build": "pnpm exec bun build src/index.ts --outdir=./dist --target=bun"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pg": "^8.20.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.49",
+    "hono": "^4.12.25",
+    "pg": "^8.21.0"
+  }
+}

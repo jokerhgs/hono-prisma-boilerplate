@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# TLS Certs
+certs/
+*.pem
+*.key
+*.crt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build
+dist/
+build/
