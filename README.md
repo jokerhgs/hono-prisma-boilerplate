@@ -1,85 +1,124 @@
-# Hono Bun Serverless Template
+# Hono Cloudflare Workers Template
 
-A lightning-fast, stateless server template using Bun, Hono, and PostgreSQL.
+A production-ready serverless API template using Hono, Drizzle ORM, and better-auth — built for Cloudflare Workers with D1 and R2.
 
 ## Tech Stack
 
-| Component | Technology | Performance Gain |
-|-----------|------------|------------------|
-| Runtime | Bun | Zig HTTP implementation, JavaScriptCore engine |
-| Framework | Hono | Zero dependencies (~14KB bundle) |
-| Database | pg (PostgreSQL) | External hosted DB — stateless by design |
-| Validation | @sinclair/typebox | Compiled to raw JavaScript functions |
+| Component         | Technology        | Notes                                |
+|-------------------|-------------------|--------------------------------------|
+| Runtime           | Cloudflare Workers| Edge-deployed, globally distributed  |
+| Framework         | Hono             | Ultra-light (~14KB), first-class CF support |
+| Database          | D1 (SQLite)      | Serverless SQLite via Cloudflare     |
+| ORM               | Drizzle          | Type-safe, light, D1-native          |
+| Auth              | better-auth      | Sessions, email verification, password reset |
+| Validation        | valibot          | Tiny schema validation library       |
+| Email             | Resend           | Transactional emails                 |
+| Object Storage    | R2               | S3-compatible, no egress fees        |
 
 ## Quick Start
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
-# Start development server
-bun run dev
+# Create a D1 database
+pnpm exec wrangler d1 create app-db
+# → Copy the database_id into wrangler.toml
 
-# Start production server
-bun run start
+# Generate & apply migrations
+pnpm db:generate
+pnpm exec wrangler d1 execute app-db --file=./drizzle/0000_*.sql
+
+# Start dev server
+pnpm dev
 ```
 
 ## Environment Variables
 
+Copy `.env.example` to `.dev.vars` for local development:
+
 ```env
-PORT=3000
-HOST=0.0.0.0
-DATABASE_URL=postgresql://user:password@host:5432/dbname  # optional
-JWT_SECRET=your-secret-key
-CORS_ORIGIN=*
+RESEND_API_KEY=re_xxx
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:8788
 ```
 
-Leave `DATABASE_URL` empty to run without a database. DB-dependent endpoints return 503.
+For production, set these via `wrangler secret put` or in the Cloudflare Dashboard.
+
+## R2 Setup
+
+Create an R2 bucket and add its name to `wrangler.toml`:
+
+```bash
+pnpm exec wrangler r2 bucket create app-assets
+```
 
 ## API Endpoints
 
 ### Health
-- `GET /health` - Health check
-- `GET /health/ready` - Readiness probe (includes DB status)
+- `GET /health` — Health check
+- `GET /health/ready` — Readiness probe (pings D1)
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user (requires token)
+### Authentication (handled by better-auth)
+- `POST /api/auth/register` — Register (triggers verification email via Resend)
+- `POST /api/auth/login` — Email/password login
+- `POST /api/auth/forgot-password` — Sends password reset email
+- `POST /api/auth/reset-password` — Resets password with token
+- `GET /api/auth/verify-email` — Email verification link handler
+- `GET /api/auth/session` — Get current session
 
-### Users
-- `GET /api/users/profile` - Get profile (requires token)
-- `PUT /api/users/profile` - Update profile (requires token)
-- `DELETE /api/users/account` - Delete account (requires token)
+### Users (requires session)
+- `GET /api/users/profile` — Get profile
+- `PUT /api/users/profile` — Update name
+- `DELETE /api/users/account` — Delete account
 
 ## Project Structure
 
 ```
 src/
-├── index.ts           # Main server entry
+├── index.ts              # Worker entry point (Hono app)
+├── schema.ts             # Drizzle table definitions
 ├── db/
-│   └── index.ts       # PostgreSQL connection (lazy, optional)
+│   └── index.ts          # Drizzle + D1 connection (cached singleton)
+├── lib/
+│   ├── auth.ts           # better-auth configuration with Resend hooks
+│   └── resend.ts         # Email service (verification, welcome, password reset)
 ├── middleware/
-│   ├── auth.ts        # JWT authentication
-│   ├── rate-limit.ts  # Rate limiting
-│   └── validate.ts    # TypeBox validation
+│   ├── auth.ts           # Session-based auth middleware via better-auth
+│   └── validate.ts       # Valibot validation middleware
 ├── routes/
-│   ├── auth.ts        # Authentication routes
-│   ├── health.ts      # Health check routes
-│   └── users.ts       # User routes
-└── types/
-    ├── env.ts         # Hono environment types
-    └── user.ts        # TypeBox schemas
+│   ├── auth.ts           # Proxies to better-auth handler
+│   ├── health.ts         # Health check + D1 readiness
+│   └── users.ts          # User profile CRUD
+├── types/
+│   └── env.ts            # Cloudflare bindings + Hono variables
+└── validators/
+    └── user.ts           # Valibot schemas
+```
+
+## Migrations
+
+```bash
+pnpm db:generate        # Generate SQL migration from schema
+pnpm exec wrangler d1 execute app-db --file=./drizzle/0000_*.sql
+```
+
+## Deploy
+
+```bash
+pnpm deploy
 ```
 
 ## Security Features
 
-- JWT authentication
-- Rate limiting (100 requests/minute)
-- CORS protection
-- Security headers
-- TypeBox input validation
-- Parameterized queries (SQL injection prevention)
+- **Session-based auth** via better-auth (secure HTTP-only cookies)
+- **Email verification** required before login (via Resend)
+- **CSRF protection** built into better-auth
+- **Security headers** via `hono/secure-headers`
+- **CORS** configured via `hono/cors`
+- **Valibot input validation** on all mutation endpoints
+- **Parameterized queries** via Drizzle ORM (SQL injection prevention)
+- **Rate limiting** at Cloudflare WAF edge (configure via Dashboard)
 
 ## License
 

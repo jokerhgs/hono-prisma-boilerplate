@@ -1,0 +1,13 @@
+name = "hono-app"
+main = "src/index.ts"
+compatibility_date = "2025-02-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "app-db"
+database_id = "local-dev"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "app-assets"

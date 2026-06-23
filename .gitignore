@@ -1,17 +1,11 @@
 # Dependencies
 node_modules/
-bun.lock
 
 # Environment
 .env
 .env.local
 .env.*.local
-
-# TLS Certs
-certs/
-*.pem
-*.key
-*.crt
+.dev.vars
 
 # IDE
 .vscode/
@@ -30,3 +24,9 @@ logs/
 # Build
 dist/
 build/
+
+# Cloudflare
+.wrangler/
+
+# Drizzle
+drizzle/meta/

@@ -1,23 +1,25 @@
 {
-  "name": "hono-bun-serverless",
-  "module": "src/index.ts",
+  "name": "hono-cf-workers",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "pnpm exec bun --watch src/index.ts",
-    "start": "pnpm exec bun src/index.ts",
-    "build": "pnpm exec bun build src/index.ts --outdir=./dist --target=bun"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/pg": "^8.20.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.49",
-    "hono": "^4.12.25",
-    "pg": "^8.21.0"
+    "better-auth": "^1.2.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.0",
+    "resend": "^4.0.0",
+    "valibot": "^1.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250201.0",
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.7.0",
+    "wrangler": "4"
   }
 }
