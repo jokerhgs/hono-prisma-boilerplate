@@ -1,16 +1,16 @@
-import { db } from '../db/index.js';
 import { sql } from 'drizzle-orm';
+import type { Db } from '../db/index.js';
 
 /**
  * Check database connection health
  * @returns Promise with connection status and optional error message
  */
-export async function checkDatabaseConnection(): Promise<{
+export async function checkDatabaseConnection(database: Db): Promise<{
   connected: boolean;
   error?: string;
 }> {
   try {
-    await db.execute(sql`SELECT 1`);
+    await database.run(sql`SELECT 1`);
     return { connected: true };
   } catch (error) {
     return {

@@ -1,14 +1,21 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext"],
     "strict": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["node"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "outDir": "./dist"
+    "noEmit": true,
+    "paths": {
+      "cloudflare:test": [
+        "./node_modules/@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts"
+      ]
+    }
   },
+  "include": ["src", "tests", "vitest.config.ts", "drizzle.config.ts", "worker-configuration.d.ts"],
   "exclude": ["node_modules"]
 }

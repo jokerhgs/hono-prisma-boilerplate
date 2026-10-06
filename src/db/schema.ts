@@ -1,16 +1,17 @@
-import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core';
-import { createId } from '@paralleldrive/cuid2';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
-export const tasks = pgTable('tasks', {
+export const tasks = sqliteTable('tasks', {
   id: text('id')
     .primaryKey()
-    .$defaultFn(() => createId()),
+    .$defaultFn(() => crypto.randomUUID()),
   title: text('title').notNull(),
-  completed: boolean('completed').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
+  completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
-    .defaultNow()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
 
